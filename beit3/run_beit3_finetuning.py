@@ -26,6 +26,7 @@ from engine_for_finetuning import train_one_epoch, get_handler, evaluate
 from datasets import create_downstream_dataset
 from utils import NativeScalerWithGradNormCount as NativeScaler
 import utils
+import modeling_finetune
 
 def get_args():
     parser = argparse.ArgumentParser('BEiT fine-tuning and evaluation script for image classification', add_help=False)
