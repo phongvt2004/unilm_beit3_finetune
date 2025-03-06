@@ -502,7 +502,6 @@ def train_one_epoch(
                 results = handler.train_batch(model, **data)
 
         loss = results.pop("loss")
-        print(loss)
         loss_value = loss.item()
 
         if not math.isfinite(loss_value):
