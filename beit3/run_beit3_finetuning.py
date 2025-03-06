@@ -132,6 +132,7 @@ def get_args():
     parser.add_argument('--pin_mem', action='store_true',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem')
+    parser.add_argument('--local-rank', default=0, type=int)
     parser.set_defaults(pin_mem=True)
 
     # distributed training parameters
