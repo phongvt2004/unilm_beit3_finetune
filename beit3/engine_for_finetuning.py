@@ -198,7 +198,7 @@ class VQAHandler(TaskHandler):
     def __init__(self) -> None:
         super().__init__()
         self.predictions = []
-        self.criterion = nn.BCEWithLogitsLoss(reduction='mean')
+        self.criterion = nn.CrossEntropyLoss()
         self.label2ans = None
 
     def train_batch(self, model, image, language_tokens, padding_mask, labels):
@@ -206,7 +206,7 @@ class VQAHandler(TaskHandler):
             image=image, question=language_tokens, 
             padding_mask=padding_mask)
         return {
-            "loss": self.criterion(input=logits.float(), target=labels.float()) * labels.shape[1], 
+            "loss": self.criterion(input=logits.float(), target=labels.float()), 
         }
 
     def before_eval(self, metric_logger, data_loader, **kwargs):
@@ -502,6 +502,7 @@ def train_one_epoch(
                 results = handler.train_batch(model, **data)
 
         loss = results.pop("loss")
+        print(loss)
         loss_value = loss.item()
 
         if not math.isfinite(loss_value):

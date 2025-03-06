@@ -26,8 +26,6 @@ from engine_for_finetuning import train_one_epoch, get_handler, evaluate
 from datasets import create_downstream_dataset
 from utils import NativeScalerWithGradNormCount as NativeScaler
 import utils
-import modeling_finetune
-
 
 def get_args():
     parser = argparse.ArgumentParser('BEiT fine-tuning and evaluation script for image classification', add_help=False)
@@ -103,6 +101,8 @@ def get_args():
     # Dataset parameters
     parser.add_argument('--data_path', default='/datasets01/imagenet_full_size/061417/', type=str,
                         help='dataset path')
+    parser.add_argument('--root_folder', default='', type=str,
+                        help='image root folder path')
 
     parser.add_argument('--output_dir', default='',
                         help='path where to save, empty for no saving')
@@ -213,7 +213,6 @@ def get_args():
 
     return parser.parse_args(), ds_init
 
-
 def main(args, ds_init):
     utils.init_distributed_mode(args)
 
@@ -261,6 +260,7 @@ def main(args, ds_init):
         drop_path_rate=args.drop_path,
         vocab_size=args.vocab_size,
         checkpoint_activations=args.checkpoint_activations,
+        num_classes=args.nb_classes
     )
 
     if args.finetune:
