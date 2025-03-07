@@ -397,7 +397,8 @@ class VQADataset(BaseDataset):
         img = self._get_image(img_path)
         data["image"] = img
         question_text = item["question"]
-        print(question_text)
+        if question_text is not str:
+            print(question_text)
         tokens = self.tokenizer.tokenize(question_text)
         token_ids = self.tokenizer.convert_tokens_to_ids(tokens)
         language_tokens, padding_mask, _ = self._get_text_segment(token_ids)
