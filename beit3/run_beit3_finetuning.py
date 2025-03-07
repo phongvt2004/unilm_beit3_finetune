@@ -389,6 +389,7 @@ def main(args, ds_init):
     
     # Initialize WandB and TensorBoard
     wandb.init(project="beit-3-vqa-finetune", name="beit-3-vqa-run")
+    print(args.output_dir)
     repo = Repository(local_dir=args.output_dir, clone_from=args.repo_id)
     
     start_time = time.time()
