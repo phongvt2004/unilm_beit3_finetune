@@ -397,7 +397,7 @@ class VQADataset(BaseDataset):
         img = self._get_image(img_path)
         data["image"] = img
         question_text = item["question"]
-        if question_text is not str:
+        if type(question_text) is not str:
             print(question_text)
         tokens = self.tokenizer.tokenize(question_text)
         token_ids = self.tokenizer.convert_tokens_to_ids(tokens)
