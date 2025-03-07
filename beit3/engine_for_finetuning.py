@@ -599,7 +599,7 @@ def train_one_epoch(
             log_writer.update(head="opt", **kwargs)
             log_writer.set_step()
         if data_loader_val is not None and global_step % eval_step == 0:
-            predictions, eval_metrics, _ = evaluate(data_loader_val, model, device, task_handler)
+            predictions, eval_metrics, _ = evaluate(data_loader_val, model, device, handler)
             prediction_file = utils.dump_predictions(args, predictions, f"{args.task}_val_e{epoch}")
             result_file = os.path.join(args.output_dir, f"{args.task}_result_val_e{epoch}.json")
             task_key = "CIDEr"
