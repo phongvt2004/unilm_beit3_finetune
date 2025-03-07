@@ -224,7 +224,7 @@ def get_args():
 
 def main(args, ds_init):
     login(token=os.getenv("HUGGINGFACE_TOKEN"))
-    print(os.getenv("HUGGINGFACE_TOKEN")
+    print(os.getenv("HUGGINGFACE_TOKEN"))
     print(args.output_dir)
     repo = Repository(local_dir=args.output_dir, clone_from=args.repo_id)
     utils.init_distributed_mode(args)
