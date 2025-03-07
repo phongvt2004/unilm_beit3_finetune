@@ -227,10 +227,12 @@ class VQAHandler(TaskHandler):
             
             scores = utils.VQAScore()(logits, labels) * 100.0
             self.metric_logger.meters['score'].update(scores.item(), n=batch_size)
-            self.eval_loss += self.criterion(input=logits.float(), target=labels.float()).item()
+            loss = self.criterion(input=logits.float(), target=labels.float()).item()
+            self.eval_loss += loss
             self.eval_logits.extend(logits.cpu().numpy())
             self.eval_labels.extend(labels.cpu().numpy())
             self.step_number += 1
+            return loss
         else:
             _, preds = logits.max(-1)
             for image_id, pred in zip(qid, preds):
@@ -241,12 +243,12 @@ class VQAHandler(TaskHandler):
 
     def after_eval(self, **kwargs):
         if len(self.predictions) == 0:
-            self.eval_metrics = utils.compute_metrics(np.array(self.logits), np.array(self.logits))
+            self.eval_metrics = utils.compute_metrics(np.array(self.eval_logits), np.array(self.eval_labels))
             self.eval_metrics["eval_loss"] = self.eval_loss / self.step_number if self.step_number > 0 else self.eval_loss
             print('* Score {score.global_avg:.3f}'.format(score=self.metric_logger.score))
             return {k: meter.global_avg for k, meter in self.metric_logger.meters.items()}, self.eval_metrics, "score"
         else:
-            self.eval_metrics = utils.compute_metrics(np.array(self.logits), np.array(self.logits))
+            self.eval_metrics = utils.compute_metrics(np.array(self.eval_logits), np.array(self.eval_labels))
             self.eval_metrics["eval_loss"] = self.eval_loss / self.step_number if self.step_number > 0 else self.eval_loss
             return self.predictions, self.eval_metrics, "prediction"
 
@@ -472,12 +474,13 @@ def evaluate(data_loader, model, device, handler, wandb):
     model.eval()
     handler.before_eval(metric_logger=metric_logger, data_loader=data_loader)
 
-    for data in metric_logger.log_every(data_loader, 10, header, wandb):
+    for data in metric_logger.log_every(data_loader, -1, header, wandb):
         for tensor_key in data.keys():
             data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
 
         with torch.cuda.amp.autocast():
-            handler.eval_batch(model=model, **data)
+            loss = handler.eval_batch(model=model, **data)
+            metric_logger.update(loss=loss)
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()

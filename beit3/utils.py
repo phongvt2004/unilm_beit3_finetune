@@ -765,6 +765,9 @@ class VQAScore(Metric):
         self.add_state("total", default=torch.tensor(0.0), dist_reduce_fx="sum")
 
     def update(self, logits, target):
+        predictions = np.argmax(logits, axis=-1)  # Get class with highest probability
+        labels = np.argmax(labels, axis=-1)
+        accuracy = accuracy_score(labels, predictions)
         logits, target = (
             logits.detach().float().to(self.score.device),
             target.detach().float().to(self.score.device),
