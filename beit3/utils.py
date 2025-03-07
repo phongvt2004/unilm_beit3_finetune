@@ -766,19 +766,11 @@ class VQAScore(Metric):
 
     def update(self, logits, target):
         predictions = np.argmax(logits, axis=-1)  # Get class with highest probability
-        labels = np.argmax(labels, axis=-1)
+        labels = np.argmax(target, axis=-1)
         accuracy = accuracy_score(labels, predictions)
-        logits, target = (
-            logits.detach().float().to(self.score.device),
-            target.detach().float().to(self.score.device),
-        )
-        logits = torch.max(logits, 1)[1]
-        one_hots = torch.zeros(*target.size()).to(target)
-        one_hots.scatter_(1, logits.view(-1, 1), 1)
-        scores = one_hots * target
 
-        self.score += scores.sum()
-        self.total += len(logits)
+        self.score += accuracy
+        self.total += 1
 
     def compute(self):
         return self.score / self.total
