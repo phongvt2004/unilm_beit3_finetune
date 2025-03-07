@@ -222,7 +222,7 @@ class VQAHandler(TaskHandler):
         if labels is not None:
             scores = utils.VQAScore()(logits, labels) * 100.0
             self.metric_logger.meters['score'].update(scores.item(), n=batch_size)
-            self.eval_metrics = utils.compute_metrics(logits, labels)
+            self.eval_metrics = utils.compute_metrics(logits.cpu().numpy(), labels)
             self.eval_metrics["eval_loss"] = self.criterion(input=logits.float(), target=labels.float())
         else:
             _, preds = logits.max(-1)
