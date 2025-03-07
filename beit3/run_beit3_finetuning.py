@@ -223,6 +223,8 @@ def get_args():
     return parser.parse_args(), ds_init
 
 def main(args, ds_init):
+    login(token=os.getenv("HUGGINGFACE_TOKEN"))
+    repo = Repository(local_dir=args.output_dir, clone_from=args.repo_id)
     utils.init_distributed_mode(args)
 
     if ds_init is not None:
@@ -385,11 +387,9 @@ def main(args, ds_init):
 
     print(f"Start training for {args.epochs} epochs")
     wandb.login(key=os.getenv("WANDB_API_KEY"))
-    login(token=os.getenv("HUGGINGFACE_TOKEN"))
     
     # Initialize WandB and TensorBoard
     wandb.init(project="beit-3-vqa-finetune", name="beit-3-vqa-run")
-    repo = Repository(local_dir=args.output_dir, clone_from=args.repo_id)
     
     start_time = time.time()
     global_step = 0
