@@ -493,7 +493,7 @@ def train_one_epoch(
         lr_schedule_values: list, loss_scaler, max_norm: float = 0, 
         update_freq: int = 1, model_ema: Optional[ModelEma] = None, 
         log_writer: Optional[utils.TensorboardLogger] = None, 
-        task = None, mixup_fn=None, wandb=None, args=None, best_loss=1000, repo=None
+        task = None, mixup_fn=None, wandb=None, args=None, best_loss=1000,
 ):
     model.train(True)
     metric_logger = utils.MetricLogger(delimiter="  ")
@@ -621,7 +621,6 @@ def train_one_epoch(
                     utils.save_model(
                         args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
                         loss_scaler=loss_scaler, epoch="best", model_ema=model_ema)
-                repo.push_to_hub()
 
             print(f'Best loss: {best_loss:.2f}%')
         step += 1

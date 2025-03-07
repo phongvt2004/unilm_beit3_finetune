@@ -28,7 +28,6 @@ from utils import NativeScalerWithGradNormCount as NativeScaler
 import utils
 import modeling_finetune
 import wandb
-from huggingface_hub import HfApi, Repository, login
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -125,7 +124,6 @@ def get_args():
     parser.add_argument('--save_ckpt', action='store_true')
     parser.add_argument('--no_save_ckpt', action='store_false', dest='save_ckpt')
     parser.set_defaults(save_ckpt=True)
-    parser.add_argument('--repo_id', default='', type=str)
     
     
 
@@ -223,10 +221,6 @@ def get_args():
     return parser.parse_args(), ds_init
 
 def main(args, ds_init):
-    login(token=os.getenv("HUGGINGFACE_TOKEN"))
-    print(os.getenv("HUGGINGFACE_TOKEN"))
-    print(args.output_dir)
-    repo = Repository(local_dir=args.output_dir, clone_from=args.repo_id)
     utils.init_distributed_mode(args)
 
     if ds_init is not None:
@@ -407,7 +401,7 @@ def main(args, ds_init):
             device=device, handler=task_handler, epoch=epoch,
             start_steps=epoch * num_training_steps_per_epoch, lr_schedule_values=lr_schedule_values, loss_scaler=loss_scaler, 
             max_norm=args.clip_grad, update_freq=args.update_freq, model_ema=model_ema, 
-            log_writer=log_writer, task=args.task, mixup_fn=mixup_fn, wandb=wandb, args=args, best_loss=best_loss, repo=repo
+            log_writer=log_writer, task=args.task, mixup_fn=mixup_fn, wandb=wandb, args=args, best_loss=best_loss,
         )
         global_step += num_training_steps_per_epoch
         if args.output_dir and args.save_ckpt:
