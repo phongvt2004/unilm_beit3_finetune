@@ -454,7 +454,7 @@ def get_handler(args):
         raise NotImplementedError("Sorry, %s is not support." % args.task)
 
 @torch.no_grad()
-def evaluate(data_loader, model, device, handler):
+def evaluate(data_loader, model, device, handler, wandb):
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = 'Test:'
 
@@ -462,7 +462,7 @@ def evaluate(data_loader, model, device, handler):
     model.eval()
     handler.before_eval(metric_logger=metric_logger, data_loader=data_loader)
 
-    for data in metric_logger.log_every(data_loader, 10, header):
+    for data in metric_logger.log_every(data_loader, 10, header, wandb):
         for tensor_key in data.keys():
             data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
 
@@ -600,7 +600,7 @@ def train_one_epoch(
             log_writer.update(head="opt", **kwargs)
             log_writer.set_step()
         if data_loader_val is not None and global_step % eval_step == 0:
-            predictions, eval_metrics, _ = evaluate(data_loader_val, model, device, handler)
+            predictions, eval_metrics, _ = evaluate(data_loader_val, model, device, handler, wandb)
             prediction_file = utils.dump_predictions(args, predictions, f"{args.task}_val_e{epoch}")
             result_file = os.path.join(args.output_dir, f"{args.task}_result_val_e{epoch}.json")
             task_key = "CIDEr"
