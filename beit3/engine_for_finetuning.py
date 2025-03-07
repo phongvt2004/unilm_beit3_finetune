@@ -241,8 +241,10 @@ class VQAHandler(TaskHandler):
 
     def after_eval(self, **kwargs):
         if len(self.predictions) == 0:
+            self.eval_metrics = utils.compute_metrics(np.array(self.logits), np.array(self.logits))
+            self.eval_metrics["eval_loss"] = self.eval_loss / self.step_number if self.step_number > 0 else self.eval_loss
             print('* Score {score.global_avg:.3f}'.format(score=self.metric_logger.score))
-            return {k: meter.global_avg for k, meter in self.metric_logger.meters.items()}, "score"
+            return {k: meter.global_avg for k, meter in self.metric_logger.meters.items()}, self.eval_metrics, "score"
         else:
             self.eval_metrics = utils.compute_metrics(np.array(self.logits), np.array(self.logits))
             self.eval_metrics["eval_loss"] = self.eval_loss / self.step_number if self.step_number > 0 else self.eval_loss
@@ -464,7 +466,7 @@ def get_handler(args):
 @torch.no_grad()
 def evaluate(data_loader, model, device, handler, wandb):
     metric_logger = utils.MetricLogger(delimiter="  ", is_eval=True)
-    header = 'Test:'
+    header = 'Eval:'
 
     # switch to evaluation mode
     model.eval()
