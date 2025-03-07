@@ -121,7 +121,6 @@ class SmoothedValue(object):
 class MetricLogger(object):
     def __init__(self, delimiter="\t", is_eval=False):
         self.meters = defaultdict(SmoothedValue)
-        self.metrics = defaultdict(SmoothedValue)
         self.delimiter = delimiter
         self.is_eval = is_eval
 
@@ -133,7 +132,6 @@ class MetricLogger(object):
                 v = v.item()
             assert isinstance(v, (float, int))
             self.meters[k].update(v)
-            self.metrics[k] = v
 
     def __getattr__(self, attr):
         if attr in self.meters:
@@ -154,12 +152,9 @@ class MetricLogger(object):
     def synchronize_between_processes(self):
         for meter in self.meters.values():
             meter.synchronize_between_processes()
-        for metrics in self.metrics.values():
-            metric.synchronize_between_processes()
 
     def add_meter(self, name, meter):
         self.meters[name] = meter
-        self.metrics[name] = meter
 
     def log_every(self, iterable, print_freq, header=None, wandb=None):
         i = 0
@@ -201,9 +196,7 @@ class MetricLogger(object):
                         meters=str(self),
                         time=str(iter_time), data=str(data_time)))
                 if not self.is_eval:
-                    print(self.meters["loss"])
-                    print(self.meters["lr"])
-                    wandb.log({"train_loss": self.meters["loss"], "lr": self.meters["lr"]}, step=i)
+                    wandb.log({"train_loss": self.meters["loss"].value()}, step=i)
             i += 1
             end = time.time()
         total_time = time.time() - start_time
