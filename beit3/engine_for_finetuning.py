@@ -481,7 +481,6 @@ def evaluate(data_loader, model, device, handler, wandb):
         with torch.amp.autocast('cuda'):
             loss = handler.eval_batch(model=model, **data)
             metric_logger.update(loss=loss)
-
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
 
@@ -536,7 +535,7 @@ def train_one_epoch(
         if loss_scaler is None:
             results = handler.train_batch(model, **data)
         else:
-            with torch.cuda.amp.autocast():
+            with torch.amp.autocast('cuda'):
                 results = handler.train_batch(model, **data)
 
         loss = results.pop("loss")
