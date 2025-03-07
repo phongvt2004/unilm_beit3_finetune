@@ -30,10 +30,7 @@ import numpy as np
 def compute_metrics(logits, labels):
     
     predictions = np.argmax(logits, axis=-1)  # Get class with highest probability
-    print(predictions.shape)
-    print(labels.shape)
-    print(predictions)
-    print(labels)
+    labels = np.argmax(labels, axis=-1)
     accuracy = accuracy_score(labels, predictions)
     precision, recall, f1, _ = precision_recall_fscore_support(labels, predictions, average="weighted", zero_division=0)
 

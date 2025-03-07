@@ -220,6 +220,7 @@ class VQAHandler(TaskHandler):
             padding_mask=padding_mask)
         batch_size = language_tokens.shape[0]
         if labels is not None:
+            
             scores = utils.VQAScore()(logits, labels) * 100.0
             self.metric_logger.meters['score'].update(scores.item(), n=batch_size)
             self.eval_metrics = utils.compute_metrics(logits.cpu().numpy(), labels.cpu().numpy())
