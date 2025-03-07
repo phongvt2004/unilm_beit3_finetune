@@ -398,7 +398,7 @@ def main(args, ds_init):
             log_writer.set_step(epoch * num_training_steps_per_epoch * args.update_freq)
         train_stats, best_loss = train_one_epoch(
             model=model, data_loader=data_loader_train, data_loader_val=data_loader_val, optimizer=optimizer, 
-            device=device, handler=task_handler, epoch=epoch,
+            device=device, handler=task_handler, epoch=epoch, model_without_ddp=model_without_ddp,
             start_steps=epoch * num_training_steps_per_epoch, lr_schedule_values=lr_schedule_values, loss_scaler=loss_scaler, 
             max_norm=args.clip_grad, update_freq=args.update_freq, model_ema=model_ema, 
             log_writer=log_writer, task=args.task, mixup_fn=mixup_fn, wandb=wandb, args=args, best_loss=best_loss,

@@ -489,7 +489,7 @@ def evaluate(data_loader, model, device, handler, wandb):
 def train_one_epoch(
         model: torch.nn.Module, data_loader: Iterable, data_loader_val: Iterable,
         optimizer: torch.optim.Optimizer, device: torch.device, 
-        handler: TaskHandler, epoch: int, start_steps: int, 
+        handler: TaskHandler, epoch: int, model_without_ddp: torch.nn.Module, start_steps: int, 
         lr_schedule_values: list, loss_scaler, max_norm: float = 0, 
         update_freq: int = 1, model_ema: Optional[ModelEma] = None, 
         log_writer: Optional[utils.TensorboardLogger] = None, 
