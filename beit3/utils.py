@@ -121,6 +121,7 @@ class SmoothedValue(object):
 class MetricLogger(object):
     def __init__(self, delimiter="\t", is_eval=False):
         self.meters = defaultdict(SmoothedValue)
+        self.metrics = dict(SmoothedValue)
         self.delimiter = delimiter
         self.is_eval = is_eval
 
@@ -132,6 +133,7 @@ class MetricLogger(object):
                 v = v.item()
             assert isinstance(v, (float, int))
             self.meters[k].update(v)
+            self.metrics[k] = v
 
     def __getattr__(self, attr):
         if attr in self.meters:
@@ -152,9 +154,12 @@ class MetricLogger(object):
     def synchronize_between_processes(self):
         for meter in self.meters.values():
             meter.synchronize_between_processes()
+        for metrics in self.metrics.values():
+            metrics.synchronize_between_processes()
 
     def add_meter(self, name, meter):
         self.meters[name] = meter
+        self.metrics[name] = meter
 
     def log_every(self, iterable, print_freq, header=None, wandb=None):
         i = 0

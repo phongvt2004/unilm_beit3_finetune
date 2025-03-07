@@ -473,8 +473,8 @@ def evaluate(data_loader, model, device, handler, wandb):
     # switch to evaluation mode
     model.eval()
     handler.before_eval(metric_logger=metric_logger, data_loader=data_loader)
-
-    for data in metric_logger.log_every(data_loader, -1, header, wandb):
+    metric_logger.add_meter(loss, 0)
+    for data in metric_logger.log_every(data_loader, 10, header, wandb):
         for tensor_key in data.keys():
             data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
 
