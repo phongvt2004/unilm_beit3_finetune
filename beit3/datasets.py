@@ -359,11 +359,10 @@ class VQADataset(BaseDataset):
         self.dataframe = pd.read_csv(os.path.join(data_path, f"{split}.csv"))[:number_sample]
         df = pd.read_csv(os.path.join(data_path, f"data.csv"))
         unique_answers = set(df["answer"].tolist())
-        answer2id = {ans: i for i, ans in enumerate(unique_answers)}
-        id2answer = {i: ans for i, ans in enumerate(unique_answers)}
-        self.answer2id = answer2id
+        self.answer2id = {ans: i for i, ans in enumerate(unique_answers)}
+        self.id2answer = {i: ans for i, ans in enumerate(unique_answers)}
         with open("answer2label.json", mode="w", encoding="utf-8") as writer:
-            writer.write(json.dumps(id2answer))
+            writer.write(json.dumps(self.id2answer))
         self.root_folder = root_folder
         self.tokenizer = tokenizer
         self.num_max_bpe_tokens = num_max_bpe_tokens

@@ -212,7 +212,7 @@ class VQAHandler(TaskHandler):
     def before_eval(self, metric_logger, data_loader, **kwargs):
         self.predictions.clear()
         self.metric_logger = metric_logger
-        self.label2ans = data_loader.dataset.label2ans
+        self.label2ans = data_loader.dataset.id2answer
 
     def eval_batch(self, model, image, language_tokens, padding_mask, labels=None, qid=None):
         logits = model(
