@@ -20,7 +20,7 @@ from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from datasets import get_sentencepiece_model_for_beit3
 
 import utils
-
+import numpy as np
 
 class TaskHandler(object):
     def __init__(self) -> None:
