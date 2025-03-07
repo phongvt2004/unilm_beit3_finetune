@@ -156,7 +156,7 @@ class MetricLogger(object):
     def add_meter(self, name, meter):
         self.meters[name] = meter
 
-    def log_every(self, iterable, print_freq, header=None, wandb=None):
+    def log_every(self, iterable, print_freq, header=None, wandb=None, start_step=0):
         i = 0
         if not header:
             header = ''
@@ -196,7 +196,7 @@ class MetricLogger(object):
                         meters=str(self),
                         time=str(iter_time), data=str(data_time)))
                 if not self.is_eval:
-                    wandb.log({"train_loss": self.meters["loss"].value}, step=i)
+                    wandb.log({"train_loss": self.meters["loss"].value}, step=i+start_step)
             i += 1
             end = time.time()
         total_time = time.time() - start_time

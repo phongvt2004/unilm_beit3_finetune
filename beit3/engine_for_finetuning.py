@@ -510,7 +510,7 @@ def train_one_epoch(
         optimizer.zero_grad()
     step = 0
     train_loss = 0.0
-    for data_iter_step, data in enumerate(metric_logger.log_every(data_loader, print_freq, header, wandb)):
+    for data_iter_step, data in enumerate(metric_logger.log_every(data_loader, print_freq, header, wandb, start_steps)):
         step = data_iter_step // update_freq
         global_step = start_steps + step  # global training iteration
         # Update LR & WD for the first acc
@@ -615,7 +615,7 @@ def train_one_epoch(
             predictions, eval_metrics, _ = evaluate(data_loader_val, model, device, handler, wandb)
             torch.distributed.barrier()
             wandb.log({**eval_metrics, "global_step": global_step}, step=global_step)
-            if best_loss < eval_metrics["eval_loss"]:
+            if best_loss > eval_metrics["eval_loss"]:
                 best_loss = eval_metrics["eval_loss"]
                 if args.output_dir and args.save_ckpt:
                     utils.save_model(
