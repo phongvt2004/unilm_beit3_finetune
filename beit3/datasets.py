@@ -418,8 +418,7 @@ class VQADataset(BaseDataset):
         item = self.dataframe.iloc[index]
         answer = item["answer"]
         labels = [0.] * len(self.answer2id)
-        labels[self.answer2id[answer]] = 1
-        data["labels"] = torch.FloatTensor(labels)
+        labels = torch.tensor(self.answer2id[answer], dtype=torch.long)
         return data
 
 class RetrievalDataset(BaseDataset):
