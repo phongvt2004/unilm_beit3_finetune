@@ -403,9 +403,11 @@ def main(args, ds_init):
         if log_writer is not None:
             log_writer.set_step(epoch * num_training_steps_per_epoch * args.update_freq)
         train_stats, best_loss = train_one_epoch(
-            model, data_loader_train, data_loader_val, optimizer, device, task_handler, epoch,
-            epoch * num_training_steps_per_epoch, lr_schedule_values, loss_scaler, 
-            args.clip_grad, args.update_freq, model_ema, log_writer, args.task, mixup_fn, wandb, args, best_loss, repo
+            model=model, data_loader=data_loader_train, data_loader_val=data_loader_val, optimizer=optimizer, 
+            device=device, handler=task_handler, epoch=epoch,
+            start_steps=epoch * num_training_steps_per_epoch, lr_schedule_values=lr_schedule_values, loss_scaler=loss_scaler, 
+            max_norm=args.clip_grad, update_freq=args.update_freq, model_ema=model_ema, 
+            log_writer=log_writer, task=args.task, mixup_fn=mixup_fn, wandb=wandb, args=args, best_loss=best_loss, repo=repo
         )
         global_step += num_training_steps_per_epoch
         if args.output_dir and args.save_ckpt:
