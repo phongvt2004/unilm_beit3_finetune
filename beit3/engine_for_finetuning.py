@@ -614,17 +614,7 @@ def train_one_epoch(
             log_writer.set_step()
         if data_loader_val is not None and global_step % eval_step == 0:
             predictions, eval_metrics, _ = evaluate(data_loader_val, model, device, handler, wandb)
-            prediction_file = utils.dump_predictions(args, predictions, f"{args.task}_val_e{epoch}")
-            result_file = os.path.join(args.output_dir, f"{args.task}_result_val_e{epoch}.json")
-            task_key = "CIDEr"
-            if utils.is_main_process():
-                test_stats = utils.coco_caption_eval(args.output_dir, prediction_file, "{}_val".format(args.task))
-                utils.write_result_to_jsonl(test_stats, result_file)
             torch.distributed.barrier()
-            if not utils.is_main_process():
-                test_stats = utils.read_result_from_jsonl(result_file)
-
-            print(f"Performance of the network on the {len(data_loader_val.dataset)} val images: {test_stats[task_key]:.1f}%")
             wandb.log({**eval_metrics, "global_step": global_step}, step=global_step)
             if best_loss < eval_metrics["eval_loss"]:
                 best_loss = eval_metrics["eval_loss"]
@@ -635,24 +625,6 @@ def train_one_epoch(
                 repo.push_to_hub()
 
             print(f'Best loss: {best_loss:.2f}%')
-            if log_writer is not None:
-                log_writer.update(acc=test_stats[task_key], head="perf", step=epoch)
-            
-            log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
-                        **{f'val_{k}': v for k, v in test_stats.items()},
-                        'epoch': epoch,
-                        'n_parameters': n_parameters}
-        else:
-            log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
-                         # **{f'test_{k}': v for k, v in test_stats.items()},
-                         'epoch': epoch,
-                         'n_parameters': n_parameters}
-
-        if args.output_dir and utils.is_main_process():
-            if log_writer is not None:
-                log_writer.flush()
-            with open(os.path.join(args.output_dir, "log.txt"), mode="a", encoding="utf-8") as f:
-                f.write(json.dumps(log_stats) + "\n")
         step += 1
 
     # gather the stats from all processes
