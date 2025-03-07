@@ -222,6 +222,8 @@ class VQAHandler(TaskHandler):
         if labels is not None:
             scores = utils.VQAScore()(logits, labels) * 100.0
             self.metric_logger.meters['score'].update(scores.item(), n=batch_size)
+            self.eval_metrics = utils.compute_metrics(logits, labels)
+            self.eval_metrics["eval_loss"] = self.criterion(input=logits.float(), target=labels.float())
         else:
             _, preds = logits.max(-1)
             for image_id, pred in zip(qid, preds):
@@ -235,7 +237,7 @@ class VQAHandler(TaskHandler):
             print('* Score {score.global_avg:.3f}'.format(score=self.metric_logger.score))
             return {k: meter.global_avg for k, meter in self.metric_logger.meters.items()}, "score"
         else:
-            return self.predictions, "prediction"
+            return self.predictions, self.eval_metrics, "prediction"
 
 
 class CaptioningHandler(TaskHandler):
@@ -450,30 +452,51 @@ def get_handler(args):
     else:
         raise NotImplementedError("Sorry, %s is not support." % args.task)
 
+@torch.no_grad()
+def evaluate(data_loader, model, device, handler):
+    metric_logger = utils.MetricLogger(delimiter="  ")
+    header = 'Test:'
+
+    # switch to evaluation mode
+    model.eval()
+    handler.before_eval(metric_logger=metric_logger, data_loader=data_loader)
+
+    for data in metric_logger.log_every(data_loader, 10, header):
+        for tensor_key in data.keys():
+            data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
+
+        with torch.cuda.amp.autocast():
+            handler.eval_batch(model=model, **data)
+
+    # gather the stats from all processes
+    metric_logger.synchronize_between_processes()
+
+    return handler.after_eval()
 
 def train_one_epoch(
-        model: torch.nn.Module, data_loader: Iterable, 
+        model: torch.nn.Module, data_loader: Iterable, data_loader_val: Iterable,
         optimizer: torch.optim.Optimizer, device: torch.device, 
         handler: TaskHandler, epoch: int, start_steps: int, 
         lr_schedule_values: list, loss_scaler, max_norm: float = 0, 
         update_freq: int = 1, model_ema: Optional[ModelEma] = None, 
         log_writer: Optional[utils.TensorboardLogger] = None, 
-        task = None, mixup_fn=None,
+        task = None, mixup_fn=None, wandb=None, args=None, best_loss=1000, repo=None
 ):
     model.train(True)
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     metric_logger.add_meter('min_lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     header = 'Epoch: [{}]'.format(epoch)
-    print_freq = 100
+    print_freq = 500
+    eval_step = 1500
 
     if loss_scaler is None:
         model.zero_grad()
         model.micro_steps = 0
     else:
         optimizer.zero_grad()
-
-    for data_iter_step, data in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
+    step = 0
+    for data_iter_step, data in enumerate(metric_logger.log_every(data_loader, print_freq, header, wandb)):
         step = data_iter_step // update_freq
         global_step = start_steps + step  # global training iteration
         # Update LR & WD for the first acc
@@ -569,30 +592,52 @@ def train_one_epoch(
             }
             log_writer.update(head="opt", **kwargs)
             log_writer.set_step()
+        if data_loader_val is not None and global_step % eval_step == 0:
+            predictions, eval_metrics, _ = evaluate(data_loader_val, model, device, task_handler)
+            prediction_file = utils.dump_predictions(args, predictions, f"{args.task}_val_e{epoch}")
+            result_file = os.path.join(args.output_dir, f"{args.task}_result_val_e{epoch}.json")
+            task_key = "CIDEr"
+            if utils.is_main_process():
+                test_stats = utils.coco_caption_eval(args.output_dir, prediction_file, "{}_val".format(args.task))
+                utils.write_result_to_jsonl(test_stats, result_file)
+            torch.distributed.barrier()
+            if not utils.is_main_process():
+                test_stats = utils.read_result_from_jsonl(result_file)
+
+            print(f"Performance of the network on the {len(data_loader_val.dataset)} val images: {test_stats[task_key]:.1f}%")
+            wandb.log({**eval_metrics, "global_step": global_step}, step=global_step)
+            if best_loss < eval_metrics["eval_loss"]:
+                best_loss = eval_metrics["eval_loss"]
+                if args.output_dir and args.save_ckpt:
+                    utils.save_model(
+                        args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
+                        loss_scaler=loss_scaler, epoch="best", model_ema=model_ema)
+                repo.push_to_hub()
+
+            print(f'Best loss: {best_loss:.2f}%')
+            if log_writer is not None:
+                log_writer.update(acc=test_stats[task_key], head="perf", step=epoch)
+            
+            log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
+                        **{f'val_{k}': v for k, v in test_stats.items()},
+                        'epoch': epoch,
+                        'n_parameters': n_parameters}
+        else:
+            log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
+                         # **{f'test_{k}': v for k, v in test_stats.items()},
+                         'epoch': epoch,
+                         'n_parameters': n_parameters}
+
+        if args.output_dir and utils.is_main_process():
+            if log_writer is not None:
+                log_writer.flush()
+            with open(os.path.join(args.output_dir, "log.txt"), mode="a", encoding="utf-8") as f:
+                f.write(json.dumps(log_stats) + "\n")
+        step += 1
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
     print("Averaged stats:", metric_logger)
-    return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
+    return {k: meter.global_avg for k, meter in metric_logger.meters.items()}, best_loss
 
 
-@torch.no_grad()
-def evaluate(data_loader, model, device, handler):
-    metric_logger = utils.MetricLogger(delimiter="  ")
-    header = 'Test:'
-
-    # switch to evaluation mode
-    model.eval()
-    handler.before_eval(metric_logger=metric_logger, data_loader=data_loader)
-
-    for data in metric_logger.log_every(data_loader, 10, header):
-        for tensor_key in data.keys():
-            data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
-
-        with torch.cuda.amp.autocast():
-            handler.eval_batch(model=model, **data)
-
-    # gather the stats from all processes
-    metric_logger.synchronize_between_processes()
-
-    return handler.after_eval()
