@@ -213,6 +213,10 @@ class VQAHandler(TaskHandler):
         self.predictions.clear()
         self.metric_logger = metric_logger
         self.label2ans = data_loader.dataset.id2answer
+        self.eval_loss = 0.0
+        self.eval_logits = []
+        self.eval_labels = []
+        self.step_number = 0
 
     def eval_batch(self, model, image, language_tokens, padding_mask, labels=None, qid=None):
         logits = model(
@@ -223,8 +227,10 @@ class VQAHandler(TaskHandler):
             
             scores = utils.VQAScore()(logits, labels) * 100.0
             self.metric_logger.meters['score'].update(scores.item(), n=batch_size)
-            self.eval_metrics = utils.compute_metrics(logits.cpu().numpy(), labels.cpu().numpy())
-            self.eval_metrics["eval_loss"] = self.criterion(input=logits.float(), target=labels.float())
+            eval_loss += self.criterion(input=logits.float(), target=labels.float()).item()
+            eval_logits.extend(eval_outputs.logits.cpu().numpy())
+            eval_labels.extend(labels.cpu().numpy())
+            self.step_number += 1
         else:
             _, preds = logits.max(-1)
             for image_id, pred in zip(qid, preds):
@@ -238,6 +244,8 @@ class VQAHandler(TaskHandler):
             print('* Score {score.global_avg:.3f}'.format(score=self.metric_logger.score))
             return {k: meter.global_avg for k, meter in self.metric_logger.meters.items()}, "score"
         else:
+            self.eval_metrics = utils.compute_metrics(np.array(self.logits), np.array(self.logits))
+            self.eval_metrics["eval_loss"] = self.eval_loss / self.step_number if self.step_number > 0 else self.eval_loss
             return self.predictions, self.eval_metrics, "prediction"
 
 
@@ -455,7 +463,7 @@ def get_handler(args):
 
 @torch.no_grad()
 def evaluate(data_loader, model, device, handler, wandb):
-    metric_logger = utils.MetricLogger(delimiter="  ")
+    metric_logger = utils.MetricLogger(delimiter="  ", is_eval=True)
     header = 'Test:'
 
     # switch to evaluation mode

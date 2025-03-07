@@ -119,9 +119,10 @@ class SmoothedValue(object):
 
 
 class MetricLogger(object):
-    def __init__(self, delimiter="\t"):
+    def __init__(self, delimiter="\t", is_eval=False):
         self.meters = defaultdict(SmoothedValue)
         self.delimiter = delimiter
+        self.is_eval = is_eval
 
     def update(self, **kwargs):
         for k, v in kwargs.items():
@@ -194,7 +195,8 @@ class MetricLogger(object):
                         i, len(iterable), eta=eta_string,
                         meters=str(self),
                         time=str(iter_time), data=str(data_time)))
-                wandb.log({"train_loss": self.meters["loss"], "lr": scheduler.get_last_lr()[0]}, step=i)
+                if not self.is_eval:
+                    wandb.log({"train_loss": self.meters["loss"], "lr": self.meters["loss"]}, step=i)
             i += 1
             end = time.time()
         total_time = time.time() - start_time
