@@ -478,7 +478,7 @@ def evaluate(data_loader, model, device, handler, wandb):
         for tensor_key in data.keys():
             data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
 
-        with torch.cuda.amp.autocast():
+        with torch.amp.autocast('cuda'):
             loss = handler.eval_batch(model=model, **data)
             metric_logger.update(loss=loss)
 

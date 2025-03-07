@@ -196,7 +196,7 @@ class MetricLogger(object):
                         meters=str(self),
                         time=str(iter_time), data=str(data_time)))
                 if not self.is_eval:
-                    wandb.log({"train_loss": self.meters["loss"].value()}, step=i)
+                    wandb.log({"train_loss": self.meters["loss"].value}, step=i)
             i += 1
             end = time.time()
         total_time = time.time() - start_time
