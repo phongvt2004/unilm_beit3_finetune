@@ -498,8 +498,6 @@ def train_one_epoch(
     step = 0
     train_loss = 0.0
     for data_iter_step, data in enumerate(metric_logger.log_every(data_loader, print_freq, header, wandb)):
-        print(data_iter_step)
-        print(update_freq)
         step = data_iter_step // update_freq
         global_step = start_steps + step  # global training iteration
         # Update LR & WD for the first acc

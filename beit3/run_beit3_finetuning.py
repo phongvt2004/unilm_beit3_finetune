@@ -403,7 +403,7 @@ def main(args, ds_init):
         if log_writer is not None:
             log_writer.set_step(epoch * num_training_steps_per_epoch * args.update_freq)
         train_stats, best_loss = train_one_epoch(
-            model, data_loader_train, optimizer, device, task_handler, epoch,
+            model, data_loader_train, data_loader_val, optimizer, device, task_handler, epoch,
             epoch * num_training_steps_per_epoch, lr_schedule_values, loss_scaler, 
             args.clip_grad, args.update_freq, model_ema, log_writer, args.task, mixup_fn, wandb, args, best_loss, repo
         )
