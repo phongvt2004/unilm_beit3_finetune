@@ -227,9 +227,9 @@ class VQAHandler(TaskHandler):
             
             scores = utils.VQAScore()(logits, labels) * 100.0
             self.metric_logger.meters['score'].update(scores.item(), n=batch_size)
-            eval_loss += self.criterion(input=logits.float(), target=labels.float()).item()
-            eval_logits.extend(eval_outputs.logits.cpu().numpy())
-            eval_labels.extend(labels.cpu().numpy())
+            self.eval_loss += self.criterion(input=logits.float(), target=labels.float()).item()
+            self.eval_logits.extend(logits.cpu().numpy())
+            self.eval_labels.extend(labels.cpu().numpy())
             self.step_number += 1
         else:
             _, preds = logits.max(-1)
