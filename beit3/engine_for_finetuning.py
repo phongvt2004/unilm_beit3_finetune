@@ -225,7 +225,7 @@ class VQAHandler(TaskHandler):
         batch_size = language_tokens.shape[0]
         if labels is not None:
             
-            scores = utils.VQAScore()(logits, labels) * 100.0
+            scores = utils.VQAScore()(logits.cpu().numpy(), labels.cpu().numpy()) * 100.0
             self.metric_logger.meters['score'].update(scores.item(), n=batch_size)
             loss = self.criterion(input=logits.float(), target=labels.float()).item()
             self.eval_loss += loss
