@@ -121,7 +121,7 @@ class SmoothedValue(object):
 class MetricLogger(object):
     def __init__(self, delimiter="\t", is_eval=False):
         self.meters = defaultdict(SmoothedValue)
-        self.metrics = dict(SmoothedValue)
+        self.metrics = defaultdict(SmoothedValue)
         self.delimiter = delimiter
         self.is_eval = is_eval
 
@@ -155,7 +155,7 @@ class MetricLogger(object):
         for meter in self.meters.values():
             meter.synchronize_between_processes()
         for metrics in self.metrics.values():
-            metrics.synchronize_between_processes()
+            metric.synchronize_between_processes()
 
     def add_meter(self, name, meter):
         self.meters[name] = meter
