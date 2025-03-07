@@ -761,8 +761,8 @@ def read_result_from_jsonl(result_file):
 class VQAScore(Metric):
     def __init__(self, dist_sync_on_step=False):
         super().__init__(dist_sync_on_step=dist_sync_on_step)
-        self.add_state("score", default=0.0, dist_reduce_fx="sum")
-        self.add_state("total", default=0.0, dist_reduce_fx="sum")
+        self.add_state("score", default=torch.tensor(0.0), dist_reduce_fx="sum")
+        self.add_state("total", default=torch.tensor(0.0), dist_reduce_fx="sum")
 
     def update(self, logits, target):
         predictions = np.argmax(logits, axis=-1)  # Get class with highest probability
