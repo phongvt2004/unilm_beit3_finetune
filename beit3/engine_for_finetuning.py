@@ -487,8 +487,8 @@ def train_one_epoch(
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     metric_logger.add_meter('min_lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     header = 'Epoch: [{}]'.format(epoch)
-    print_freq = 500
-    eval_step = 1500
+    print_freq = 40
+    eval_step = 100
 
     if loss_scaler is None:
         model.zero_grad()
@@ -496,6 +496,7 @@ def train_one_epoch(
     else:
         optimizer.zero_grad()
     step = 0
+    train_loss = 0.0
     for data_iter_step, data in enumerate(metric_logger.log_every(data_loader, print_freq, header, wandb)):
         step = data_iter_step // update_freq
         global_step = start_steps + step  # global training iteration
@@ -526,7 +527,7 @@ def train_one_epoch(
 
         loss = results.pop("loss")
         loss_value = loss.item()
-
+        train_loss += loss_value
         if not math.isfinite(loss_value):
             print("Loss is {}, stopping training".format(loss_value))
             sys.exit(1)
@@ -574,7 +575,12 @@ def train_one_epoch(
                 weight_decay_value = group["weight_decay"]
         metric_logger.update(weight_decay=weight_decay_value)
         metric_logger.update(grad_norm=grad_norm)
-
+        if global_step % print_freq == 0:
+            wandb.log({"train_loss": train_loss, "loss_scale": loss_scale_value, 
+                    "lr": max_lr, 
+                    "min_lr": min_lr, 
+                    "weight_decay": weight_decay_value, 
+                    "grad_norm": grad_norm, }, step=global_step)
         if log_writer is not None:
             kwargs = {
                 "loss": loss_value, 
