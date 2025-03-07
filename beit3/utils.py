@@ -28,8 +28,11 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import numpy as np
 
 def compute_metrics(logits, labels):
+    print(logits.shape)
+    print(labels.shape)
     predictions = np.argmax(logits, axis=-1)  # Get class with highest probability
-
+    print(logits)
+    print(labels)
     accuracy = accuracy_score(labels, predictions)
     precision, recall, f1, _ = precision_recall_fscore_support(labels, predictions, average="weighted", zero_division=0)
 
