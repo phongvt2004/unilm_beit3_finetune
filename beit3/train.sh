@@ -1,8 +1,12 @@
+export NCCL_DEBUG=INFO
+export NCCL_DEBUG_SUBSYS=ALL
+export NCCL_P2P_DISABLE=1
+export NCCL_IB_DISABLE=1
 torchrun -m torch.distributed.launch --nproc_per_node=3 --master_port=29501 run_beit3_finetuning.py \
         --model beit3_base_patch16_480 \
         --input_size 480 \
         --task vqav2 \
-        --batch_size 10 \
+        --batch_size 4 \
         --num_workers 10 \
         --layer_decay 1.0 \
         --lr 3e-5 \
