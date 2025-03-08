@@ -353,15 +353,17 @@ class VQADataset(BaseDataset):
     def __init__(self, data_path, split, transform, root_folder, tokenizer, num_max_bpe_tokens):
         
         if split == 'train':
-            number_sample = 3000
+            number_sample = 10000
         else:
-            number_sample = 500
+            number_sample = 5000
         self.dataframe = pd.read_csv(os.path.join(data_path, f"{split}.csv"))[:number_sample]
         df = pd.read_csv(os.path.join(data_path, f"data.csv"))
         unique_answers = set(df["answer"].tolist())
         self.answer2id = {ans: i for i, ans in enumerate(unique_answers)}
         self.id2answer = {i: ans for i, ans in enumerate(unique_answers)}
         with open("answer2label.json", mode="w", encoding="utf-8") as writer:
+            writer.write(json.dumps(self.answer2id))
+        with open("label2lanswer.json", mode="w", encoding="utf-8") as writer:
             writer.write(json.dumps(self.id2answer))
         self.root_folder = root_folder
         self.tokenizer = tokenizer

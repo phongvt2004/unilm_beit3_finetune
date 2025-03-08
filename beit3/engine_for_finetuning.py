@@ -245,7 +245,6 @@ class VQAHandler(TaskHandler):
         if len(self.predictions) == 0:
             self.eval_metrics = utils.compute_metrics(np.array(self.eval_logits), np.array(self.eval_labels))
             self.eval_metrics["eval_loss"] = self.eval_loss / self.step_number if self.step_number > 0 else self.eval_loss
-            print('* Score {score.global_avg:.3f}'.format(score=self.metric_logger.score))
             return {k: meter.global_avg for k, meter in self.metric_logger.meters.items()}, self.eval_metrics, "score"
         else:
             self.eval_metrics = utils.compute_metrics(np.array(self.eval_logits), np.array(self.eval_labels))
@@ -474,7 +473,7 @@ def evaluate(data_loader, model, device, handler, wandb):
     model.eval()
     handler.before_eval(metric_logger=metric_logger, data_loader=data_loader)
     metric_logger.add_meter("loss", utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
-    for data in metric_logger.log_every(data_loader, 10, header, wandb):
+    for data in metric_logger.log_every(data_loader, 100, header, wandb):
         for tensor_key in data.keys():
             data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
 
@@ -500,8 +499,8 @@ def train_one_epoch(
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     metric_logger.add_meter('min_lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     header = 'Epoch: [{}]'.format(epoch)
-    print_freq = 40
-    eval_step = 100
+    print_freq = 100
+    eval_step = 250
 
     if loss_scaler is None:
         model.zero_grad()
@@ -622,7 +621,7 @@ def train_one_epoch(
                         args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
                         loss_scaler=loss_scaler, epoch="best", model_ema=model_ema)
 
-            print(f'Best loss: {best_loss:.2f}%')
+            print(f'Best loss: {best_loss:.2f}')
         step += 1
 
     # gather the stats from all processes
