@@ -1,8 +1,8 @@
 torchrun -m torch.distributed.launch --nproc_per_node=3 --master_port=29501 run_beit3_finetuning.py \
-        --model beit3_large_patch16_480 \
+        --model beit3_base_patch16_480 \
         --input_size 480 \
         --task vqav2 \
-        --batch_size 4 \
+        --batch_size 14 \
         --num_workers 10 \
         --layer_decay 1.0 \
         --lr 3e-5 \
@@ -12,7 +12,7 @@ torchrun -m torch.distributed.launch --nproc_per_node=3 --master_port=29501 run_
         --drop_path 0.1 \
         --nb_classes 108 \
         --sentencepiece_model /workspace/models/beit3.spm \
-        --finetune /workspace/models/beit3_large_patch16_480_vqa.pth \
+        --finetune /workspace/models/beit3_base_patch16_480_vqa.pth \
         --data_path /workspace/vqa-info-data \
         --root_folder /workspace/vqa_dataset/images \
         --output_dir output \
