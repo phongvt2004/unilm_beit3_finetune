@@ -209,6 +209,7 @@ class BEiT3ForVisualQuestionAnswering(BEiT3Wrapper):
             norm_layer(embed_dim * 2), 
             nn.GELU(), 
             nn.Linear(embed_dim * 2, num_classes), 
+            nn.Softmax(dim=1)
         )
         self.head.apply(self._init_weights)
 

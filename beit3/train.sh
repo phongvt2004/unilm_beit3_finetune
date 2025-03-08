@@ -2,7 +2,7 @@ torchrun -m torch.distributed.launch --nproc_per_node=3 --master_port=29501 run_
         --model beit3_base_patch16_480 \
         --input_size 480 \
         --task vqav2 \
-        --batch_size 14 \
+        --batch_size 12 \
         --num_workers 10 \
         --layer_decay 1.0 \
         --lr 3e-5 \
