@@ -469,19 +469,21 @@ def evaluate(data_loader, model, device, handler, wandb):
 
     # switch to evaluation mode
     model.eval()
-    handler.before_eval(metric_logger=metric_logger, data_loader=data_loader)
-    metric_logger.add_meter("loss", utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
-    with tqdm(total=len(data_loader), desc=f"Eval ", leave=False) as pbar2:
-        for data in metric_logger.log_every(data_loader, 1000, header, wandb):
-            for tensor_key in data.keys():
-                data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
+    
+    with torch.no_grad():
+        handler.before_eval(metric_logger=metric_logger, data_loader=data_loader)
+        metric_logger.add_meter("loss", utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
+        with tqdm(total=len(data_loader), desc=f"Eval ", leave=False) as pbar2:
+            for data in metric_logger.log_every(data_loader, 1000, header, wandb):
+                for tensor_key in data.keys():
+                    data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
 
-            with torch.amp.autocast('cuda'):
-                loss = handler.eval_batch(model=model, **data)
-                metric_logger.update(loss=loss)
-            pbar2.update(1)
-        # gather the stats from all processes
-    metric_logger.synchronize_between_processes()
+                with torch.amp.autocast('cuda'):
+                    loss = handler.eval_batch(model=model, **data)
+                    metric_logger.update(loss=loss)
+                pbar2.update(1)
+            # gather the stats from all processes
+        metric_logger.synchronize_between_processes()
 
     return handler.after_eval()
 
@@ -494,7 +496,7 @@ def train_one_epoch(
         log_writer: Optional[utils.TensorboardLogger] = None, 
         task = None, mixup_fn=None, wandb=None, args=None, best_loss=1000,
 ):
-    model.train(True)
+    
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     metric_logger.add_meter('min_lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
@@ -511,6 +513,7 @@ def train_one_epoch(
     train_loss = 0.0
     with tqdm(total=len(data_loader), desc=f"Epoch {epoch+1}", leave=False) as pbar:
         for data_iter_step, data in enumerate(metric_logger.log_every(data_loader, print_freq, header, wandb, start_steps, epoch)):
+            model.train()
             step = data_iter_step // update_freq
             global_step = start_steps + step  # global training iteration
             # Update LR & WD for the first acc
@@ -612,6 +615,7 @@ def train_one_epoch(
                 log_writer.update(head="opt", **kwargs)
                 log_writer.set_step()
             if data_loader_val is not None and global_step % eval_step == 0:
+                torch.cuda.empty_cache()
                 predictions, eval_metrics, _ = evaluate(data_loader_val, model, device, handler, wandb)
                 torch.distributed.barrier()
                 wandb.log({**eval_metrics, "global_step": global_step}, step=global_step)
