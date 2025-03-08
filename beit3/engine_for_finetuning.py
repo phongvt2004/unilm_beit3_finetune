@@ -21,7 +21,7 @@ from datasets import get_sentencepiece_model_for_beit3
 
 import utils
 import numpy as np
-
+from tqdm import tqdm
 class TaskHandler(object):
     def __init__(self) -> None:
         self.metric_logger = None
