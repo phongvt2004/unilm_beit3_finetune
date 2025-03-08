@@ -472,7 +472,7 @@ def evaluate(data_loader, model, device, handler, wandb):
     handler.before_eval(metric_logger=metric_logger, data_loader=data_loader)
     metric_logger.add_meter("loss", utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     with tqdm(total=len(data_loader), desc=f"Eval ", leave=False) as pbar2:
-        for data in metric_logger.log_every(data_loader, 500, header, wandb):
+        for data in metric_logger.log_every(data_loader, 1000, header, wandb):
             for tensor_key in data.keys():
                 data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
 
@@ -499,8 +499,8 @@ def train_one_epoch(
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     metric_logger.add_meter('min_lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     header = 'Epoch: [{}]'.format(epoch)
-    print_freq = 500
-    eval_step = 1000
+    print_freq = 1000
+    eval_step = 2000
 
     if loss_scaler is None:
         model.zero_grad()
