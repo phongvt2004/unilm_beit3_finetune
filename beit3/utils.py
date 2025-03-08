@@ -156,7 +156,7 @@ class MetricLogger(object):
     def add_meter(self, name, meter):
         self.meters[name] = meter
 
-    def log_every(self, iterable, print_freq, header=None, wandb=None, start_step=0):
+    def log_every(self, iterable, print_freq, header=None, wandb=None, start_step=0, epoch=-1):
         i = 0
         if not header:
             header = ''
@@ -177,7 +177,7 @@ class MetricLogger(object):
             log_msg.append('max mem: {memory:.0f}')
         log_msg = self.delimiter.join(log_msg)
         MB = 1024.0 * 1024.0
-        for obj in iterable:
+        for obj in iterable if self.is_eval else tqdm(iterable, desc=f"Epoch {epoch+1}", leave=False):
             data_time.update(time.time() - end)
             yield obj
             iter_time.update(time.time() - end)
