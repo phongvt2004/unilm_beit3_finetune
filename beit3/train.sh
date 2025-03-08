@@ -1,4 +1,4 @@
-torchrun -m torch.distributed.launch --nproc_per_node=4 --master_port=29501 run_beit3_finetuning.py \
+torchrun -m torch.distributed.launch --nproc_per_node=3 --master_port=29501 run_beit3_finetuning.py \
         --model beit3_base_patch16_480 \
         --input_size 480 \
         --task vqav2 \
