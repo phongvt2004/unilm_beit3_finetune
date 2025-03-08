@@ -508,7 +508,7 @@ def train_one_epoch(
     step = 0
     train_loss = 0.0
     with tqdm(total=len(data_loader), desc=f"Epoch {epoch+1}", leave=False) as pbar:
-        for data_iter_step, data in enumerate(metric_logger.log_every(data_loader, print_freq, header, wandb, start_steps, epoch):
+        for data_iter_step, data in enumerate(metric_logger.log_every(data_loader, print_freq, header, wandb, start_steps, epoch)):
             step = data_iter_step // update_freq
             global_step = start_steps + step  # global training iteration
             # Update LR & WD for the first acc
