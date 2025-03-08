@@ -1,24 +1,25 @@
-python run_beit3_finetuning.py \
+torchrun -m torch.distributed.launch --nproc_per_node=4 --master_port=29501 run_beit3_finetuning.py \
         --model beit3_base_patch16_480 \
         --input_size 480 \
         --task vqav2 \
-        --batch_size 1 \
+        --batch_size 32 \
+        --num_workers 10 \
         --layer_decay 1.0 \
         --lr 3e-5 \
         --update_freq 1 \
-        --epochs 1 \
+        --epochs 5 \
         --warmup_epochs 1 \
         --drop_path 0.1 \
         --nb_classes 108 \
-        --sentencepiece_model beit3.spm \
-        --finetune beit3_base_patch16_480_vqa.pth \
-        --data_path data_info \
-        --root_folder vqa_dataset/images \
+        --sentencepiece_model models/beit3.spm \
+        --finetune models/beit3_base_patch16_480_vqa.pth \
+        --data_path /workspace/vqa-info-data \
+        --root_folder /workspace/vqa_dataset/images \
         --output_dir output \
         --log_dir log \
         --weight_decay 0.01 \
         --seed 42 \
-        --save_ckpt_freq 5 \
+        --save_ckpt_freq 1 \
         --task_head_lr_weight 20 \
         --opt_betas 0.9 0.98 \
-        --device cpu
+        --enable_deepspeed

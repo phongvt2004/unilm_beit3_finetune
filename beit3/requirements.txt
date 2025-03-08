@@ -21,3 +21,7 @@ pycocotools
 pycocoevalcap
 torchscale==0.2.0
 python-dotenv
+wandb
+tqdm
+huggingface_hub
+scikit-learn
