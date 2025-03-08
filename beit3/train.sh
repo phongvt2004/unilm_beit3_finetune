@@ -11,8 +11,8 @@ torchrun -m torch.distributed.launch --nproc_per_node=4 --master_port=29501 run_
         --warmup_epochs 1 \
         --drop_path 0.1 \
         --nb_classes 108 \
-        --sentencepiece_model models/beit3.spm \
-        --finetune models/beit3_base_patch16_480_vqa.pth \
+        --sentencepiece_model /workspace/models/beit3.spm \
+        --finetune /workspace/models/beit3_base_patch16_480_vqa.pth \
         --data_path /workspace/vqa-info-data \
         --root_folder /workspace/vqa_dataset/images \
         --output_dir output \
