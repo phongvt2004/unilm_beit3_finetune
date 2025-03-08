@@ -26,6 +26,7 @@ from torchmetrics import Metric
 from tensorboardX import SummaryWriter
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import numpy as np
+from tqdm import tqdm
 
 def compute_metrics(logits, labels):
     
