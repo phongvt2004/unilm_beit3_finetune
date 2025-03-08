@@ -382,10 +382,11 @@ def main(args, ds_init):
             exit(0)
 
     print(f"Start training for {args.epochs} epochs")
-    wandb.login(key=os.getenv("WANDB_API_KEY"))
-    
-    # Initialize WandB and TensorBoard
-    wandb.init(project="beit-3-vqa-finetune", name="beit-3-vqa-run")
+    if utils.is_main_process(): # Add this condition
+        wandb.login(key=os.getenv("WANDB_API_KEY"))
+        wandb.init(project="beit-3-vqa-finetune", name="beit-3-vqa-run")
+    else:
+        wandb.init(project="beit-3-vqa-finetune", name="beit-3-vqa-run", mode="disabled") # Disable for other processes
     
     start_time = time.time()
     global_step = 0
