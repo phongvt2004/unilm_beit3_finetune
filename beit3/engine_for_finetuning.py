@@ -507,122 +507,122 @@ def train_one_epoch(
         optimizer.zero_grad()
     step = 0
     train_loss = 0.0
-    data_iter_step = 0
-    for data in tqdm(metric_logger.log_every(data_loader, print_freq, header, wandb, start_steps, epoch), desc=f"Epoch {epoch+1}", leave=False):
-        step = data_iter_step // update_freq
-        global_step = start_steps + step  # global training iteration
-        # Update LR & WD for the first acc
-        if lr_schedule_values is not None and data_iter_step % update_freq == 0:
-            for i, param_group in enumerate(optimizer.param_groups):
-                if lr_schedule_values is not None:
-                    param_group["lr"] = lr_schedule_values[global_step] * param_group["lr_scale"]
-        # put input data into cuda
-        for tensor_key in data.keys():
-            data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
-            # print("input %s = %s" % (tensor_key, data[tensor_key]))
-            if loss_scaler is None and tensor_key.startswith("image"):
-                data[tensor_key] = data[tensor_key].half()
+    with tqdm(total=len(data_loader), desc=f"Epoch {epoch+1}", leave=False) as pbar:
+        for data_iter_step, data in enumerate(metric_logger.log_every(data_loader, print_freq, header, wandb, start_steps, epoch):
+            step = data_iter_step // update_freq
+            global_step = start_steps + step  # global training iteration
+            # Update LR & WD for the first acc
+            if lr_schedule_values is not None and data_iter_step % update_freq == 0:
+                for i, param_group in enumerate(optimizer.param_groups):
+                    if lr_schedule_values is not None:
+                        param_group["lr"] = lr_schedule_values[global_step] * param_group["lr_scale"]
+            # put input data into cuda
+            for tensor_key in data.keys():
+                data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
+                # print("input %s = %s" % (tensor_key, data[tensor_key]))
+                if loss_scaler is None and tensor_key.startswith("image"):
+                    data[tensor_key] = data[tensor_key].half()
 
-        # mixup for imagenet finetuning
-        if mixup_fn is not None:
-            data["image"], data["label"] = mixup_fn(data["image"], data["label"])
-        
-        if task in ["coco_captioning", "nocaps"]:
-            data["global_step"] = global_step
+            # mixup for imagenet finetuning
+            if mixup_fn is not None:
+                data["image"], data["label"] = mixup_fn(data["image"], data["label"])
+            
+            if task in ["coco_captioning", "nocaps"]:
+                data["global_step"] = global_step
 
-        if loss_scaler is None:
-            results = handler.train_batch(model, **data)
-        else:
-            with torch.amp.autocast('cuda'):
+            if loss_scaler is None:
                 results = handler.train_batch(model, **data)
+            else:
+                with torch.amp.autocast('cuda'):
+                    results = handler.train_batch(model, **data)
 
-        loss = results.pop("loss")
-        loss_value = loss.item()
-        train_loss += loss_value
-        if not math.isfinite(loss_value):
-            print("Loss is {}, stopping training".format(loss_value))
-            sys.exit(1)
+            loss = results.pop("loss")
+            loss_value = loss.item()
+            train_loss += loss_value
+            if not math.isfinite(loss_value):
+                print("Loss is {}, stopping training".format(loss_value))
+                sys.exit(1)
 
-        if loss_scaler is None:
-            loss /= update_freq
-            model.backward(loss)
-            model.step()
+            if loss_scaler is None:
+                loss /= update_freq
+                model.backward(loss)
+                model.step()
 
-            if (data_iter_step + 1) % update_freq == 0:
-                # model.zero_grad()
-                # Deepspeed will call step() & model.zero_grad() automatic
-                if model_ema is not None:
-                    model_ema.update(model)
-            grad_norm = None
-            loss_scale_value = utils.get_loss_scale_for_deepspeed(model)
-        else:
-            # this attribute is added by timm on one optimizer (adahessian)
-            is_second_order = hasattr(optimizer, 'is_second_order') and optimizer.is_second_order
-            loss /= update_freq
-            grad_norm = loss_scaler(loss, optimizer, clip_grad=max_norm,
-                                    parameters=model.parameters(), create_graph=is_second_order,
-                                    update_grad=(data_iter_step + 1) % update_freq == 0)
-            if (data_iter_step + 1) % update_freq == 0:
-                optimizer.zero_grad()
-                if model_ema is not None:
-                    model_ema.update(model)
-            loss_scale_value = loss_scaler.state_dict()["scale"]
+                if (data_iter_step + 1) % update_freq == 0:
+                    # model.zero_grad()
+                    # Deepspeed will call step() & model.zero_grad() automatic
+                    if model_ema is not None:
+                        model_ema.update(model)
+                grad_norm = None
+                loss_scale_value = utils.get_loss_scale_for_deepspeed(model)
+            else:
+                # this attribute is added by timm on one optimizer (adahessian)
+                is_second_order = hasattr(optimizer, 'is_second_order') and optimizer.is_second_order
+                loss /= update_freq
+                grad_norm = loss_scaler(loss, optimizer, clip_grad=max_norm,
+                                        parameters=model.parameters(), create_graph=is_second_order,
+                                        update_grad=(data_iter_step + 1) % update_freq == 0)
+                if (data_iter_step + 1) % update_freq == 0:
+                    optimizer.zero_grad()
+                    if model_ema is not None:
+                        model_ema.update(model)
+                loss_scale_value = loss_scaler.state_dict()["scale"]
 
-        torch.cuda.synchronize()
+            torch.cuda.synchronize()
 
-        metric_logger.update(loss=loss_value)
-        metric_logger.update(loss_scale=loss_scale_value)
-        min_lr = 10.
-        max_lr = 0.
-        for group in optimizer.param_groups:
-            min_lr = min(min_lr, group["lr"])
-            max_lr = max(max_lr, group["lr"])
+            metric_logger.update(loss=loss_value)
+            metric_logger.update(loss_scale=loss_scale_value)
+            min_lr = 10.
+            max_lr = 0.
+            for group in optimizer.param_groups:
+                min_lr = min(min_lr, group["lr"])
+                max_lr = max(max_lr, group["lr"])
 
-        metric_logger.update(lr=max_lr)
-        metric_logger.update(min_lr=min_lr)
-        weight_decay_value = None
-        for group in optimizer.param_groups:
-            if group["weight_decay"] > 0:
-                weight_decay_value = group["weight_decay"]
-        metric_logger.update(weight_decay=weight_decay_value)
-        metric_logger.update(grad_norm=grad_norm)
-        if global_step % print_freq == 0:
-            wandb.log({"train_loss": train_loss, "loss_scale": loss_scale_value, 
+            metric_logger.update(lr=max_lr)
+            metric_logger.update(min_lr=min_lr)
+            weight_decay_value = None
+            for group in optimizer.param_groups:
+                if group["weight_decay"] > 0:
+                    weight_decay_value = group["weight_decay"]
+            metric_logger.update(weight_decay=weight_decay_value)
+            metric_logger.update(grad_norm=grad_norm)
+            if global_step % print_freq == 0:
+                wandb.log({"train_loss": train_loss, "loss_scale": loss_scale_value, 
+                        "lr": max_lr, 
+                        "min_lr": min_lr, 
+                        "weight_decay": weight_decay_value, 
+                        "grad_norm": grad_norm, }, step=global_step)
+            if log_writer is not None:
+                kwargs = {
+                    "loss": loss_value, 
+                }
+                for key in results:
+                    kwargs[key] = results[key]
+                log_writer.update(head="train", **kwargs)
+
+                kwargs = {
+                    "loss_scale": loss_scale_value, 
                     "lr": max_lr, 
                     "min_lr": min_lr, 
                     "weight_decay": weight_decay_value, 
-                    "grad_norm": grad_norm, }, step=global_step)
-        if log_writer is not None:
-            kwargs = {
-                "loss": loss_value, 
-            }
-            for key in results:
-                kwargs[key] = results[key]
-            log_writer.update(head="train", **kwargs)
+                    "grad_norm": grad_norm, 
+                }
+                log_writer.update(head="opt", **kwargs)
+                log_writer.set_step()
+            if data_loader_val is not None and global_step % eval_step == 0:
+                predictions, eval_metrics, _ = evaluate(data_loader_val, model, device, handler, wandb)
+                torch.distributed.barrier()
+                wandb.log({**eval_metrics, "global_step": global_step}, step=global_step)
+                if best_loss > eval_metrics["eval_loss"]:
+                    best_loss = eval_metrics["eval_loss"]
+                    if args.output_dir and args.save_ckpt:
+                        utils.save_model(
+                            args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
+                            loss_scaler=loss_scaler, epoch="best", model_ema=model_ema)
 
-            kwargs = {
-                "loss_scale": loss_scale_value, 
-                "lr": max_lr, 
-                "min_lr": min_lr, 
-                "weight_decay": weight_decay_value, 
-                "grad_norm": grad_norm, 
-            }
-            log_writer.update(head="opt", **kwargs)
-            log_writer.set_step()
-        if data_loader_val is not None and global_step % eval_step == 0:
-            predictions, eval_metrics, _ = evaluate(data_loader_val, model, device, handler, wandb)
-            torch.distributed.barrier()
-            wandb.log({**eval_metrics, "global_step": global_step}, step=global_step)
-            if best_loss > eval_metrics["eval_loss"]:
-                best_loss = eval_metrics["eval_loss"]
-                if args.output_dir and args.save_ckpt:
-                    utils.save_model(
-                        args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
-                        loss_scaler=loss_scaler, epoch="best", model_ema=model_ema)
-
-            print(f'Best loss: {best_loss:.2f}')
-        step += 1
-        data_iter_step += 1
+                print(f'Best loss: {best_loss:.2f}')
+            step += 1
+            pbar.update(1)
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
