@@ -25,3 +25,4 @@ wandb
 tqdm
 huggingface_hub
 scikit-learn
+pandas
