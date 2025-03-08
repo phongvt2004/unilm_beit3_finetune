@@ -471,14 +471,16 @@ def evaluate(data_loader, model, device, handler, wandb):
     model.eval()
     handler.before_eval(metric_logger=metric_logger, data_loader=data_loader)
     metric_logger.add_meter("loss", utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
-    for data in metric_logger.log_every(data_loader, 100, header, wandb):
-        for tensor_key in data.keys():
-            data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
+    with tqdm(total=len(data_loader), desc=f"Epoch {epoch+1}", leave=False) as pbar:
+        for data in metric_logger.log_every(data_loader, 100, header, wandb):
+            for tensor_key in data.keys():
+                data[tensor_key] = data[tensor_key].to(device, non_blocking=True)
 
-        with torch.amp.autocast('cuda'):
-            loss = handler.eval_batch(model=model, **data)
-            metric_logger.update(loss=loss)
-    # gather the stats from all processes
+            with torch.amp.autocast('cuda'):
+                loss = handler.eval_batch(model=model, **data)
+                metric_logger.update(loss=loss)
+            pbar.update(1)
+        # gather the stats from all processes
     metric_logger.synchronize_between_processes()
 
     return handler.after_eval()
