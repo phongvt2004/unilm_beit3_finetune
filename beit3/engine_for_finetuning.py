@@ -225,8 +225,6 @@ class VQAHandler(TaskHandler):
         batch_size = language_tokens.shape[0]
         if labels is not None:
             
-            scores = utils.VQAScore()(logits.cpu().numpy(), labels.cpu().numpy()) * 100.0
-            self.metric_logger.meters['score'].update(scores, n=batch_size)
             loss = self.criterion(input=logits.float(), target=labels.float()).item()
             self.eval_loss += loss
             self.eval_logits.extend(logits.cpu().numpy())
@@ -509,7 +507,8 @@ def train_one_epoch(
         optimizer.zero_grad()
     step = 0
     train_loss = 0.0
-    for data_iter_step, data in enumerate(tqdm(metric_logger.log_every(data_loader, print_freq, header, wandb, start_steps, epoch), desc=f"Epoch {epoch+1}", leave=False)):
+    data_iter_step = 0
+    for data in tqdm(metric_logger.log_every(data_loader, print_freq, header, wandb, start_steps, epoch), desc=f"Epoch {epoch+1}", leave=False):
         step = data_iter_step // update_freq
         global_step = start_steps + step  # global training iteration
         # Update LR & WD for the first acc
@@ -623,6 +622,7 @@ def train_one_epoch(
 
             print(f'Best loss: {best_loss:.2f}')
         step += 1
+        data_iter_step += 1
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
