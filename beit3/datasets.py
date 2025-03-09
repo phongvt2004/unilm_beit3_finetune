@@ -352,9 +352,9 @@ class ImageNetDataset(BaseDataset):
 class VQADataset(BaseDataset):
     def __init__(self, data_path, split, transform, root_folder, tokenizer, num_max_bpe_tokens):
         if split == 'train':
-            num_sample = 10000
-        else:
             num_sample = 5000
+        else:
+            num_sample = 1000
         self.dataframe = pd.read_csv(os.path.join(data_path, f"{split}.csv"))[:num_sample]
         self.dataframe.dropna(inplace=True)
         df = pd.read_csv(os.path.join(data_path, f"data.csv"))

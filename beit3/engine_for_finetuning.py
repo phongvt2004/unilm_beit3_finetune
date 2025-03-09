@@ -617,6 +617,7 @@ def train_one_epoch(
             if data_loader_val is not None and global_step % eval_step == 0:
                 torch.cuda.empty_cache()
                 predictions, eval_metrics, _ = evaluate(data_loader_val, model, device, handler, wandb)
+                torch.cuda.empty_cache()
                 torch.distributed.barrier()
                 wandb.log({**eval_metrics, "global_step": global_step}, step=global_step)
                 if best_loss > eval_metrics["eval_loss"]:
