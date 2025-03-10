@@ -393,8 +393,6 @@ def main(args, ds_init):
     best_loss = 1000
     
     for epoch in range(args.start_epoch, args.epochs):
-        print(epoch)
-        print()
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
         if log_writer is not None:
