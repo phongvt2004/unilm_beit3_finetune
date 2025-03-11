@@ -484,6 +484,23 @@ def save_model(args, epoch, model, model_without_ddp, optimizer, loss_scaler, mo
             client_state['model_ema'] = get_state_dict(model_ema)
         model.save_checkpoint(save_dir=args.output_dir, tag="checkpoint-%s" % epoch, client_state=client_state)
 
+def load_and_save_model_for_inference(args, model):
+    checkpoint_path = Path(args.checkpoint_path)
+    
+    if checkpoint_path.exists():
+        checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
+        if 'module' in checkpoint:
+            model.load_state_dict(checkpoint['module'])
+            print(f"Loaded checkpoint from {checkpoint_path}, epoch {checkpoint.get('epoch', 'unknown')}")
+        else:
+            raise KeyError("Checkpoint does not contain a 'module' key.")
+        
+        # Save the model for inference
+        save_path = 'model_inference.pth'
+        torch.save(model.state_dict(), save_path)
+        print(f"Model saved for inference at {save_path}")
+    else:
+        raise FileNotFoundError(f"Checkpoint file {checkpoint_path} not found.")
 
 def auto_load_model(args, model, model_without_ddp, optimizer, loss_scaler, model_ema=None):
     output_dir = Path(args.output_dir)
