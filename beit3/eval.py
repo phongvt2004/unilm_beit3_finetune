@@ -61,7 +61,6 @@ if __name__ == '__main__':
         checkpoint = checkpoint["module"]
     else:
         model.load_state_dict(checkpoint)
-    checkpoint = torch.load(args.model_path, map_location=device)
 
     # Print weight stats
     for name, param in model.items():
