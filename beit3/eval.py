@@ -59,7 +59,18 @@ if __name__ == '__main__':
         model.load_state_dict(checkpoint["module"])
     else:
         model.load_state_dict(checkpoint)
+    checkpoint = torch.load(args.model_path, map_location=device)
 
+    # Print weight stats
+    for name, param in model.items():
+        print(f"{name}: mean={param.mean().item()}, std={param.std().item()}")
+        break  # Just check the first layer
+
+    # Verify model state_dict keys
+    print("Checkpoint keys:", checkpoint.keys())
+
+    # Ensure correct loading
+    model.load_state_dict(checkpoint.get("model", checkpoint), strict=False)
     model = model.half().to(device)  # Convert to FP16 for AMP
     model.eval()
 
