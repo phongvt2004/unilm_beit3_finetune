@@ -351,7 +351,12 @@ class ImageNetDataset(BaseDataset):
 
 class VQADataset(BaseDataset):
     def __init__(self, data_path, split, transform, root_folder, tokenizer, num_max_bpe_tokens):
-        self.dataframe = pd.read_csv(os.path.join(data_path, f"{split}.csv"))
+        num_sample = -1
+        if split == 'train':
+            num_sample = -1
+        else:
+            num_sample = 2000
+        self.dataframe = pd.read_csv(os.path.join(data_path, f"{split}.csv"))[:num_sample]
         self.dataframe.dropna(inplace=True)
         df = pd.read_csv(os.path.join(data_path, f"data.csv"))
         unique_answers = set(df["answer"].tolist())
