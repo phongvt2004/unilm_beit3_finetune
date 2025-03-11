@@ -463,7 +463,7 @@ def get_handler(args):
         raise NotImplementedError("Sorry, %s is not support." % args.task)
 
 @torch.no_grad()
-def evaluate(data_loader, model, device, handler, wandb):
+def evaluate(data_loader, model, device, handler, wandb=None):
     metric_logger = utils.MetricLogger(delimiter="  ", is_eval=True)
     header = 'Eval:'
 
