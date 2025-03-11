@@ -63,7 +63,7 @@ if __name__ == '__main__':
         model.load_state_dict(checkpoint)
 
     # Print weight stats
-    for name, param in model.items():
+    for name, param in model.named_parameters():
         print(f"{name}: mean={param.mean().item()}, std={param.std().item()}")
         break  # Just check the first layer
 
