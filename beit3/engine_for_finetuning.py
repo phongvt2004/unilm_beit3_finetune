@@ -224,7 +224,6 @@ class VQAHandler(TaskHandler):
             padding_mask=padding_mask)
         batch_size = language_tokens.shape[0]
         if labels is not None:
-            print(logits.shape, labels.shape)
             loss = self.criterion(input=logits.float(), target=labels.float()).item()
             self.eval_loss += loss
             self.eval_logits.extend(logits.cpu().numpy())
