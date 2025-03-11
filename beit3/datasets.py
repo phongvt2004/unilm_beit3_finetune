@@ -354,18 +354,24 @@ class VQADataset(BaseDataset):
         num_sample = -1
         if split == 'train':
             num_sample = -1
-        else:
+        else if split == 'val':
             num_sample = 2000
         self.dataframe = pd.read_csv(os.path.join(data_path, f"{split}.csv"))[:num_sample]
         self.dataframe.dropna(inplace=True)
-        df = pd.read_csv(os.path.join(data_path, f"data.csv"))
-        unique_answers = set(df["answer"].tolist())
-        self.answer2id = {ans: i for i, ans in enumerate(unique_answers)}
-        self.id2answer = {i: ans for i, ans in enumerate(unique_answers)}
-        with open("answer2label.json", mode="w", encoding="utf-8") as writer:
-            writer.write(json.dumps(self.answer2id))
-        with open("label2lanswer.json", mode="w", encoding="utf-8") as writer:
-            writer.write(json.dumps(self.id2answer))
+        if split == 'train':
+            df = pd.read_csv(os.path.join(data_path, f"data.csv"))
+            unique_answers = set(df["answer"].tolist())
+            self.answer2id = {ans: i for i, ans in enumerate(unique_answers)}
+            self.id2answer = {i: ans for i, ans in enumerate(unique_answers)}
+            with open("answer2label.json", mode="w", encoding="utf-8") as writer:
+                writer.write(json.dumps(self.answer2id))
+            with open("label2lanswer.json", mode="w", encoding="utf-8") as writer:
+                writer.write(json.dumps(self.id2answer))
+        else:
+            with open("answer2label.json", mode="r", encoding="utf-8") as f:
+                self.answer2id = json.load(f)
+            with open("label2lanswer.json", mode="r", encoding="utf-8") as f:
+                self.id2answer = json.load(f)
         self.root_folder = root_folder
         self.tokenizer = tokenizer
         self.num_max_bpe_tokens = num_max_bpe_tokens
