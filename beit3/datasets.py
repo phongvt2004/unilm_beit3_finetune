@@ -358,6 +358,7 @@ class VQADataset(BaseDataset):
             num_sample = 2000
         else:
             num_sample = 1000
+            split = 'val'
         self.dataframe = pd.read_csv(os.path.join(data_path, f"{split}.csv"))[:num_sample]
         self.dataframe.dropna(inplace=True)
         if split == 'train':
